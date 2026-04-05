@@ -185,7 +185,10 @@ async function runJob(jobId, sourceUrl, imageUrl) {
 
 // === Routes ===
 
-app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
+app.get('/', (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.sendFile(__dirname + '/index.html');
+});
 app.use('/files', express.static(FILES_DIR));
 
 app.get('/api/models', (req, res) => {
@@ -212,6 +215,11 @@ app.post('/api/jobs', async (req, res) => {
     if (!req.body.url) return res.status(400).json({ error: 'url is required' });
 
     const sourceUrl = req.body.url;
+
+    // Always log every submission so nothing is lost
+    const logLine = `${new Date().toISOString()} | ${sourceUrl}\n`;
+    fs.promises.appendFile(path.join(__dirname, 'submissions.log'), logLine).catch(() => {});
+
     const imageUrl = await resolveImageUrl(sourceUrl);
 
     // Check if this image was already created
