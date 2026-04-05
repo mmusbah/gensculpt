@@ -131,7 +131,7 @@
     width: 100%; aspect-ratio: 4/5; background: #13161d; position: relative; overflow: hidden;
   }
   .card .viewer .viewer-bg {
-    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.12; filter: blur(2px);
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.85; filter: blur(12px) saturate(0.4);
   }
   .card model-viewer {
     width: 100%; height: 100%;
@@ -318,18 +318,16 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
 function createCard(m) {
   const card = document.createElement('div');
   card.className = 'card';
-  const title = esc(m.title || 'Untitled');
   const creator = esc(m.creator || 'GenSculpt');
   const duration = m.duration_s ? `&#9201; ${m.duration_s}s` : '';
   const cost = m.cost_usd ? `&#9670; $${m.cost_usd.toFixed(2)}` : '';
-  const titleHtml = m.source_url ? `<a href="${esc(m.source_url)}" target="_blank" class="title">${title}</a>` : `<span class="title">${title}</span>`;
+  const nameHtml = m.source_url ? `<a href="${esc(m.source_url)}" target="_blank" class="title">${creator}</a>` : `<span class="title">${creator}</span>`;
   const profileLink = m.profile_url ? `<a href="${esc(m.profile_url)}" target="_blank" class="subtitle">${creator}</a>` : `<span class="subtitle">${creator}</span>`;
   card.innerHTML = `
     <div class="card-header">
       <div class="avatar"><img src="${esc(m.source_image)}" alt="" onerror="this.style.display='none'"></div>
       <div class="info">
-        ${titleHtml}
-        ${profileLink}
+        ${nameHtml}
       </div>
     </div>
     <div class="viewer">
