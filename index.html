@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GenTube 3D</title>
+<title>GenSculpt by GenTube</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #13161d; color: #fff; font-family: -apple-system, system-ui, sans-serif; min-height: 100vh; }
@@ -11,28 +11,82 @@
   .topbar {
     position: sticky; top: 0; z-index: 100;
     display: flex; align-items: center; gap: 14px;
-    padding: 14px 24px;
+    padding: 10px 20px;
     background: #1a1e2a;
     border-bottom: 1px solid #2a2e3a;
+    height: 56px;
   }
-  .topbar img { height: 28px; }
-  .topbar .logo-text { font-size: 18px; font-weight: 700; }
-  .topbar .input-wrap {
-    flex: 1; max-width: 720px; margin: 0 auto; position: relative;
-  }
+  .topbar .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; flex-shrink: 0; width: 160px; }
+  .topbar .logo img { height: 26px; }
+  .topbar .logo-text { font-size: 17px; font-weight: 700; color: #fff; }
+  .topbar .input-wrap { flex: 1; max-width: 720px; margin: 0 auto; position: relative; }
   .topbar input {
-    width: 100%; padding: 12px 18px; padding-right: 44px;
+    width: 100%; padding: 10px 16px; padding-right: 44px;
     border-radius: 10px; border: 1px solid #2a2e3a;
-    background: #242837; color: #fff; font-size: 15px; outline: none;
+    background: #242837; color: #fff; font-size: 14px; outline: none;
   }
-  .topbar input::placeholder { color: #667; }
+  .topbar input::placeholder { color: #556; }
   .topbar input:focus { border-color: #444; }
   .topbar .submit-icon {
     position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-    background: none; border: none; color: #888; cursor: pointer; font-size: 18px;
-    padding: 6px;
+    background: none; border: none; color: #888; cursor: pointer; font-size: 16px; padding: 6px;
   }
   .topbar .submit-icon:hover { color: #fff; }
+  .topbar .bell { margin-left: auto; color: #556; font-size: 18px; flex-shrink: 0; }
+
+  /* Layout */
+  .layout { display: flex; min-height: calc(100vh - 56px); }
+
+  /* Sidebar */
+  .sidebar {
+    width: 170px; flex-shrink: 0; padding: 16px 14px;
+    border-right: 1px solid #2a2e3a; background: #1a1e2a;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .sidebar .user { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 8px; }
+  .sidebar .user .avatar { width: 28px; height: 28px; border-radius: 50%; background: #2a2e3a; }
+  .sidebar .user .name { font-size: 13px; color: #889; }
+  .sidebar .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px; font-size: 13px; color: #778;
+    cursor: default; transition: background 0.15s;
+  }
+  .sidebar .nav-item:hover { background: #242837; }
+  .sidebar .nav-item.active { color: #fff; font-weight: 600; }
+  .sidebar .nav-item .icon { width: 16px; text-align: center; font-size: 14px; }
+  .sidebar .nav-item .skel {
+    height: 10px; border-radius: 4px; background: #2a2e3a; flex: 1;
+  }
+  .sidebar .divider { height: 1px; background: #2a2e3a; margin: 8px 0; }
+  .sidebar .section-label { font-size: 11px; color: #445; padding: 4px 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Main content */
+  .main { flex: 1; overflow-y: auto; }
+
+  /* Filter tabs */
+  .tabs {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 24px;
+  }
+  .tab {
+    padding: 6px 16px; border-radius: 20px; font-size: 13px; color: #667;
+    cursor: default; border: 1px solid transparent;
+  }
+  .tab.active { color: #fff; border-color: #3a3e4a; background: #242837; }
+
+  /* Hero */
+  .hero {
+    padding: 32px 24px 8px; text-align: center;
+  }
+  .hero h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .hero p { font-size: 14px; color: #556; margin-top: 6px; }
+
+  /* Section title */
+  .section-title {
+    padding: 0 24px 8px; display: flex; align-items: baseline; gap: 10px;
+  }
+  .section-title h2 { font-size: 18px; font-weight: 700; }
+  .section-title span { font-size: 13px; color: #445; }
 
   /* Status toast */
   .toast {
@@ -50,74 +104,154 @@
 
   /* Feed grid */
   .feed {
-    max-width: 1200px; margin: 24px auto; padding: 0 24px;
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    padding: 0 24px 48px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
   }
-  @media (max-width: 900px) { .feed { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 1000px) { .feed { grid-template-columns: repeat(2, 1fr); } .sidebar { display: none; } }
   @media (max-width: 560px) { .feed { grid-template-columns: 1fr; } }
 
   /* Card */
   .card {
-    background: #1a1e2a; border-radius: 14px; overflow: hidden;
+    background: #1a1e2a; border-radius: 12px; overflow: hidden;
     border: 1px solid #2a2e3a; transition: border-color 0.2s;
   }
   .card:hover { border-color: #3a3e4a; }
+  .card .card-header {
+    display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+  }
+  .card .card-header .avatar { width: 32px; height: 32px; border-radius: 50%; background: #2a2e3a; flex-shrink: 0; overflow: hidden; }
+  .card .card-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .card .card-header .info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .card .card-header .title { font-size: 13px; font-weight: 600; color: #dde; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .card-header .subtitle { font-size: 11px; color: #556; }
   .card .viewer {
-    width: 100%; aspect-ratio: 1; background: #13161d;
+    width: 100%; aspect-ratio: 4/5; background: #13161d; position: relative;
   }
   .card model-viewer {
     width: 100%; height: 100%;
     --poster-color: transparent;
   }
-  .card .card-footer {
-    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
-    border-top: 1px solid #2a2e3a;
+  .card .card-bottom {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; border-top: 1px solid #2a2e3a;
   }
-  .card .card-footer img {
-    width: 36px; height: 36px; border-radius: 8px; object-fit: cover;
-    border: 1px solid #2a2e3a;
-  }
-  .card .card-footer span {
-    font-size: 13px; color: #889;
-  }
+  .card .card-bottom .stats { display: flex; gap: 12px; }
+  .card .card-bottom .stat { font-size: 12px; color: #556; }
+  .card .card-bottom .time { font-size: 11px; color: #445; }
 
-  /* Empty state */
-  .empty {
-    grid-column: 1 / -1; text-align: center; padding: 80px 24px; color: #556;
+  /* Placeholder card */
+  .card.placeholder {
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    aspect-ratio: 3/4;
   }
-  .empty p { font-size: 16px; margin-bottom: 6px; }
-  .empty span { font-size: 13px; }
+  .card.placeholder:hover { border-color: #4a4e5a; }
+  .card.placeholder .plus {
+    display: flex; flex-direction: column; align-items: center; gap: 10px; color: #445;
+  }
+  .card.placeholder .plus-icon {
+    width: 52px; height: 52px; border-radius: 50%; border: 2px dashed #334;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; color: #445; transition: all 0.2s;
+  }
+  .card.placeholder:hover .plus-icon { border-color: #667; color: #889; }
+  .card.placeholder .plus span { font-size: 13px; }
 
-  /* Generating card placeholder */
+  /* Generating card */
   .card.generating .viewer {
     display: flex; align-items: center; justify-content: center;
   }
   .card.generating .loader {
-    display: flex; flex-direction: column; align-items: center; gap: 12px; color: #667;
+    display: flex; flex-direction: column; align-items: center; gap: 16px; color: #667;
   }
-  .card.generating .loader .spinner {
-    width: 28px; height: 28px; border: 2px solid #333; border-top-color: #888;
-    border-radius: 50%; animation: spin 0.8s linear infinite;
+  .card.generating .ring-wrap { position: relative; width: 80px; height: 80px; }
+  .card.generating .ring-bg { fill: none; stroke: #242837; stroke-width: 4; }
+  .card.generating .ring-progress {
+    fill: none; stroke: #fff; stroke-width: 4;
+    stroke-linecap: round; stroke-dasharray: 226.2; stroke-dashoffset: 226.2;
+    transform: rotate(-90deg); transform-origin: center;
+    transition: stroke-dashoffset 1s linear;
   }
-  .card.generating .loader span { font-size: 13px; }
+  .card.generating .timer-text {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 18px; font-weight: 600; color: #ccd; font-variant-numeric: tabular-nums;
+  }
+  .card.generating .loader .status-text { font-size: 13px; color: #667; }
+
+  /* Skeleton shimmer */
+  .skel-shimmer {
+    background: linear-gradient(90deg, #242837 25%, #2e3245 50%, #242837 75%);
+    background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px;
+  }
+  @keyframes shimmer { to { background-position: -200% 0; } }
 </style>
 </head><body>
 
 <div class="topbar">
-  <img src="https://www.gentube.app/images/gentube.svg" alt="GenTube">
-  <span class="logo-text">GenTube</span>
+  <a class="logo" href="https://www.gentube.app" target="_blank">
+    <img src="https://www.gentube.app/images/gentube.svg" alt="GenTube">
+    <span class="logo-text">GenTube</span>
+  </a>
   <div class="input-wrap">
-    <input type="text" id="url" placeholder="Type to Create ✨" autofocus>
-    <button class="submit-icon" onclick="generate()" title="Generate 3D">&#10148;</button>
+    <input type="text" id="url" placeholder="Paste image link to turn into 3D" autofocus>
+    <button class="submit-icon" onclick="generate()" title="Turn into 3D">&#10148;</button>
+  </div>
+  <span class="bell">&#128276;</span>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="user">
+      <div class="avatar"></div>
+      <span class="name">mo.</span>
+    </div>
+    <div class="nav-item"><span class="icon">&#9737;</span> Notifications</div>
+    <div class="divider"></div>
+    <div class="nav-item"><span class="icon">&#9733;</span> <div class="skel"></div></div>
+    <div class="nav-item"><span class="icon">&#9673;</span> <div class="skel"></div></div>
+    <div class="nav-item"><span class="icon">&#9673;</span> <div class="skel"></div></div>
+    <div class="nav-item"><span class="icon">&#9673;</span> <div class="skel"></div></div>
+    <div class="nav-item"><span class="icon">&#9998;</span> <div class="skel"></div></div>
+    <div class="divider"></div>
+    <div class="nav-item"><span class="icon">&#10024;</span> Create</div>
+    <div class="divider"></div>
+    <div class="nav-item active"><span class="icon">&#9883;</span> GenSculpt</div>
+    <div class="nav-item"><span class="icon">&#8593;</span> Trending</div>
+    <div class="nav-item"><span class="icon">&#9734;</span> Creators</div>
+    <div class="nav-item"><span class="icon">&#9638;</span> Blocks</div>
+    <div class="nav-item"><span class="icon">&#9654;</span> Videos</div>
+    <div class="nav-item"><span class="icon">&#8981;</span> Search</div>
+    <div class="divider"></div>
+    <div class="nav-item"><span class="icon">&#9881;</span> Settings</div>
+    <div class="nav-item"><span class="icon">&#9993;</span> <div class="skel"></div></div>
+    <div class="nav-item"><span class="icon">&#9672;</span> <div class="skel"></div></div>
+  </div>
+
+  <div class="main">
+    <div class="tabs">
+      <div class="tab">Latest</div>
+      <div class="tab">Creators</div>
+      <div class="tab active">GenSculpt</div>
+      <div class="tab">Videos</div>
+    </div>
+
+    <div class="hero">
+      <h1>Turn GenTube Creations into 3D Models</h1>
+      <p></p>
+    </div>
+
+    <div class="section-title">
+      <h2>Gallery</h2>
+      <span>All created models</span>
+    </div>
+
+    <div class="feed" id="feed"></div>
   </div>
 </div>
 
 <div class="toast" id="toast">
-  <div class="spinner"></div>
+  <div class="spinner" id="toast-spinner"></div>
   <span id="toast-text">Generating...</span>
 </div>
-
-<div class="feed" id="feed"></div>
 
 <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 <script>
@@ -125,53 +259,138 @@ const feed = document.getElementById('feed');
 const toast = document.getElementById('toast');
 const toastText = document.getElementById('toast-text');
 
-// Load existing models on page load
-async function loadFeed() {
-  const res = await fetch('/api/models');
-  const models = await res.json();
-  feed.innerHTML = '';
-  if (models.length === 0) {
-    feed.innerHTML = '<div class="empty"><p>No models yet</p><span>Paste an image URL above to create your first 3D model</span></div>';
-    return;
-  }
-  models.forEach(m => addCard(m.source_image, m.glb_url));
+function focusInput() {
+  document.getElementById('url').focus();
+  document.getElementById('toast-spinner').style.display = 'none';
+  toastText.textContent = 'Paste an image link above';
+  toast.classList.add('show');
+  clearTimeout(window._hintTimeout);
+  window._hintTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-function addCard(sourceImage, glbUrl) {
+function timeSince(dateStr) {
+  const s = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+
+function createPlaceholder() {
   const card = document.createElement('div');
-  card.className = 'card';
+  card.className = 'card placeholder';
+  card.onclick = focusInput;
   card.innerHTML = `
-    <div class="viewer">
-      <model-viewer src="${glbUrl}" auto-rotate camera-controls shadow-intensity="1" environment-image="neutral" style="width:100%;height:100%;background:#13161d;"></model-viewer>
-    </div>
-    <div class="card-footer">
-      <img src="${sourceImage}" alt="source">
-      <span>3D Model</span>
+    <div class="plus">
+      <div class="plus-icon">+</div>
+      <span>Add an Image</span>
     </div>
   `;
   return card;
 }
 
-function addGeneratingCard(sourceImage) {
+async function loadFeed() {
+  const res = await fetch('/api/models');
+  const models = await res.json();
+  feed.innerHTML = '';
+
+  if (models.length === 0) {
+    for (let i = 0; i < 6; i++) feed.appendChild(createPlaceholder());
+    return;
+  }
+
+  models.forEach(m => feed.appendChild(createCard(m)));
+
+  // Always show at least one placeholder row
+  const remainder = models.length % 3;
+  const placeholders = remainder === 0 ? 3 : (3 - remainder);
+  for (let i = 0; i < placeholders; i++) feed.appendChild(createPlaceholder());
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function createCard(m) {
   const card = document.createElement('div');
-  card.className = 'card generating';
-  card.id = 'generating-card';
+  card.className = 'card';
+  const title = esc(m.title || '3D Model');
+  const creator = esc(m.creator || 'GenSculpt');
+  const duration = m.duration_s ? `&#9201; ${m.duration_s}s` : '';
+  const cost = m.cost_usd ? `&#9670; $${m.cost_usd.toFixed(2)}` : '';
   card.innerHTML = `
-    <div class="viewer">
-      <div class="loader">
-        <div class="spinner"></div>
-        <span>Creating 3D model...</span>
+    <div class="card-header">
+      <div class="avatar"><img src="${esc(m.source_image)}" alt="" onerror="this.style.display='none'"></div>
+      <div class="info">
+        <span class="title">${title}</span>
+        <span class="subtitle">${creator}</span>
       </div>
     </div>
-    <div class="card-footer">
-      <img src="${sourceImage}" alt="source">
-      <span>Generating...</span>
+    <div class="viewer">
+      <model-viewer src="${esc(m.glb_url)}" loading="lazy" auto-rotate camera-controls shadow-intensity="1" environment-image="neutral" style="width:100%;height:100%;background:#13161d;"></model-viewer>
+    </div>
+    <div class="card-bottom">
+      <div class="stats">
+        ${duration ? `<span class="stat">${duration}</span>` : ''}
+        ${cost ? `<span class="stat">${cost}</span>` : ''}
+      </div>
+      <span class="time">${m.created_at ? timeSince(m.created_at) : ''}</span>
     </div>
   `;
-  // Remove empty state if present
-  const empty = feed.querySelector('.empty');
-  if (empty) empty.remove();
-  feed.prepend(card);
+  return card;
+}
+
+function createGeneratingCard(sourceImage) {
+  const card = document.createElement('div');
+  card.className = 'card generating';
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="avatar"><img src="${sourceImage}" alt="" onerror="this.style.display='none'"></div>
+      <div class="info">
+        <span class="title">Generating...</span>
+        <span class="subtitle">GenSculpt</span>
+      </div>
+    </div>
+    <div class="viewer">
+      <div class="loader">
+        <div class="ring-wrap">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle class="ring-bg" cx="40" cy="40" r="36"/>
+            <circle class="ring-progress" cx="40" cy="40" r="36"/>
+          </svg>
+          <span class="timer-text">120</span>
+        </div>
+        <span class="status-text">Sculpting 3D model...</span>
+      </div>
+    </div>
+    <div class="card-bottom">
+      <div class="stats"><span class="stat countdown-label">~120s remaining</span></div>
+      <span class="time">now</span>
+    </div>
+  `;
+
+  const circumference = 2 * Math.PI * 36;
+  const ring = card.querySelector('.ring-progress');
+  const timerText = card.querySelector('.timer-text');
+  const countdownLabel = card.querySelector('.countdown-label');
+  const statusText = card.querySelector('.status-text');
+  let seconds = 120;
+
+  const interval = setInterval(() => {
+    seconds--;
+    if (seconds <= 0) {
+      clearInterval(interval);
+      timerText.textContent = '...';
+      countdownLabel.textContent = 'almost done';
+      statusText.textContent = 'Finishing up...';
+      ring.style.strokeDashoffset = '0';
+      return;
+    }
+    timerText.textContent = seconds;
+    countdownLabel.textContent = `~${seconds}s remaining`;
+    const progress = (120 - seconds) / 120;
+    ring.style.strokeDashoffset = circumference * (1 - progress);
+  }, 1000);
+
+  card._timerInterval = interval;
   return card;
 }
 
@@ -181,11 +400,19 @@ async function generate() {
   if (!url) return;
   input.value = '';
 
-  const card = addGeneratingCard(url);
+  const placeholders = feed.querySelectorAll('.placeholder');
+  if (placeholders.length > 0) placeholders[0].remove();
+
+  const card = createGeneratingCard(url);
+  feed.prepend(card);
+  document.getElementById('toast-spinner').style.display = '';
   toast.classList.add('show');
   toastText.textContent = 'Submitting...';
 
   try {
+    const metaPromise = fetch('/api/meta?url=' + encodeURIComponent(url))
+      .then(r => r.json()).catch(() => ({ title: '', creator: '' }));
+
     const r = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -194,44 +421,54 @@ async function generate() {
     const data = await r.json();
     if (data.error) throw new Error(data.error);
 
-    toastText.textContent = 'Generating 3D model...';
-    const glbUrl = await poll(data.status_url, data.response_url);
+    // Use resolved direct image URL for the source thumbnail
+    const sourceImg = data.resolved_image_url || url;
 
-    // Save to server
+    toastText.textContent = 'Sculpting 3D model...';
+    const startedAt = data.started_at || Date.now();
+    const [glbUrl, meta] = await Promise.all([
+      poll(data.status_url, data.response_url),
+      metaPromise,
+    ]);
+    const durationS = Math.round((Date.now() - startedAt) / 1000);
+
     await fetch('/api/models', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source_image: url, glb_url: glbUrl }),
+      body: JSON.stringify({ source_image: sourceImg, glb_url: glbUrl, title: meta.title, creator: meta.creator, duration_s: durationS }),
     });
 
-    // Replace generating card with real card
-    const realCard = addCard(url, glbUrl);
-    card.replaceWith(realCard);
+    clearInterval(card._timerInterval);
+    const newCard = createCard({ source_image: sourceImg, glb_url: glbUrl, title: meta.title, creator: meta.creator, duration_s: durationS, cost_usd: 0.10, created_at: new Date().toISOString() });
+    card.replaceWith(newCard);
     toast.classList.remove('show');
 
   } catch (e) {
+    clearInterval(card._timerInterval);
     toastText.textContent = 'Error: ' + e.message;
     setTimeout(() => {
       toast.classList.remove('show');
-      card.remove();
+      card.replaceWith(createPlaceholder());
     }, 3000);
   }
 }
 
+const MAX_POLL_MS = 600000; // 10 min timeout
 async function poll(statusUrl, responseUrl) {
-  while (true) {
+  const deadline = Date.now() + MAX_POLL_MS;
+  while (Date.now() < deadline) {
     await new Promise(r => setTimeout(r, 4000));
-    const r = await fetch('/api/status?url=' + encodeURIComponent(statusUrl));
+    const r = await fetch('/api/fal-proxy?url=' + encodeURIComponent(statusUrl));
     const data = await r.json();
 
     if (data.status === 'COMPLETED') {
-      const rr = await fetch('/api/result?url=' + encodeURIComponent(responseUrl));
-      const result = await rr.json();
+      const result = await (await fetch('/api/fal-proxy?url=' + encodeURIComponent(responseUrl))).json();
       return result.model_glb?.url || result.model_urls?.glb?.url;
     }
     if (data.status === 'FAILED') throw new Error('Generation failed');
-    toastText.textContent = data.status === 'IN_QUEUE' ? 'In queue...' : 'Creating 3D model...';
+    toastText.textContent = data.status === 'IN_QUEUE' ? 'In queue...' : 'Sculpting 3D model...';
   }
+  throw new Error('Generation timed out after 10 minutes');
 }
 
 document.getElementById('url').addEventListener('keydown', e => { if (e.key === 'Enter') generate(); });
