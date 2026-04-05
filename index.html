@@ -416,37 +416,23 @@ async function generate() {
   toastText.textContent = 'Submitting...';
 
   try {
-    const metaPromise = fetch('/api/meta?url=' + encodeURIComponent(url))
-      .then(r => r.json()).catch(() => ({ title: '', creator: '' }));
-
-    const r = await fetch('/api/generate', {
+    // Submit job — server handles everything from here
+    const r = await fetch('/api/jobs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image_url: url }),
+      body: JSON.stringify({ url }),
     });
     const data = await r.json();
     if (data.error) throw new Error(data.error);
 
-    // Use resolved direct image URL for the source thumbnail
-    const sourceImg = data.resolved_image_url || url;
-
     toastText.textContent = 'Sculpting 3D model...';
-    const startedAt = data.started_at || Date.now();
-    const [glbUrl, meta] = await Promise.all([
-      poll(data.status_url, data.response_url),
-      metaPromise,
-    ]);
-    const durationS = Math.round((Date.now() - startedAt) / 1000);
 
-    await fetch('/api/models', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source_image: sourceImg, glb_url: glbUrl, title: meta.title, creator: meta.creator, source_url: url, profile_url: meta.profile_url, duration_s: durationS }),
-    });
+    // Poll job status
+    const result = await pollJob(data.job_id);
 
     clearInterval(card._timerInterval);
-    const newCard = createCard({ source_image: sourceImg, glb_url: glbUrl, title: meta.title, creator: meta.creator, duration_s: durationS, cost_usd: 0.10, created_at: new Date().toISOString() });
-    card.replaceWith(newCard);
+    // Reload feed to show the new model with all server-side data
+    await loadFeed();
     toast.classList.remove('show');
 
   } catch (e) {
@@ -459,22 +445,20 @@ async function generate() {
   }
 }
 
-const MAX_POLL_MS = 600000; // 10 min timeout
-async function poll(statusUrl, responseUrl) {
-  const deadline = Date.now() + MAX_POLL_MS;
+async function pollJob(jobId) {
+  const deadline = Date.now() + 600000;
   while (Date.now() < deadline) {
     await new Promise(r => setTimeout(r, 4000));
-    const r = await fetch('/api/fal-proxy?url=' + encodeURIComponent(statusUrl));
-    const data = await r.json();
+    const r = await fetch(`/api/jobs/${jobId}`);
+    const job = await r.json();
 
-    if (data.status === 'COMPLETED') {
-      const result = await (await fetch('/api/fal-proxy?url=' + encodeURIComponent(responseUrl))).json();
-      return result.model_glb?.url || result.model_urls?.glb?.url;
-    }
-    if (data.status === 'FAILED') throw new Error('Generation failed');
-    toastText.textContent = data.status === 'IN_QUEUE' ? 'In queue...' : 'Sculpting 3D model...';
+    if (job.status === 'done') return job;
+    if (job.status === 'error') throw new Error(job.error || 'Generation failed');
+
+    const statusMap = { queued: 'In queue...', submitting: 'Submitting...', generating: 'Sculpting 3D model...', saving: 'Saving files...' };
+    toastText.textContent = statusMap[job.status] || 'Working...';
   }
-  throw new Error('Generation timed out after 10 minutes');
+  throw new Error('Generation timed out');
 }
 
 document.getElementById('url').addEventListener('keydown', e => { if (e.key === 'Enter') generate(); });
