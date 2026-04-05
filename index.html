@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Image to 3D</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #fff; font-family: -apple-system, system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+  .header { padding: 48px 24px 24px; text-align: center; }
+  .header h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: #888; margin-top: 8px; font-size: 15px; }
+  .input-row { display: flex; gap: 10px; padding: 0 24px; width: 100%; max-width: 640px; }
+  .input-row input { flex: 1; padding: 14px 18px; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-size: 15px; outline: none; }
+  .input-row input:focus { border-color: #555; }
+  .input-row button { padding: 14px 28px; border-radius: 10px; border: none; background: #fff; color: #000; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .input-row button:hover { background: #e0e0e0; }
+  .input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .status { margin-top: 24px; color: #888; font-size: 14px; min-height: 20px; }
+  .progress { width: 200px; height: 3px; background: #222; border-radius: 2px; margin-top: 12px; overflow: hidden; display: none; }
+  .progress-bar { height: 100%; background: #fff; border-radius: 2px; animation: indeterminate 1.5s infinite; }
+  @keyframes indeterminate { 0% { width: 0; margin-left: 0; } 50% { width: 60%; margin-left: 20%; } 100% { width: 0; margin-left: 100%; } }
+  .result { margin-top: 32px; width: 100%; max-width: 700px; display: none; flex-direction: column; align-items: center; padding: 0 24px; }
+  .compare { display: flex; gap: 20px; width: 100%; align-items: flex-start; margin-bottom: 16px; }
+  .compare img { width: 160px; border-radius: 10px; border: 1px solid #333; }
+  .compare .arrow { font-size: 28px; color: #555; align-self: center; }
+  .viewer-wrap { width: 100%; aspect-ratio: 1; background: #111; border-radius: 14px; border: 1px solid #222; overflow: hidden; }
+  model-viewer { width: 100%; height: 100%; }
+  .dl { margin-top: 16px; margin-bottom: 48px; }
+  .dl a { background: #222; color: #fff; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-size: 14px; }
+  .dl a:hover { background: #333; }
+</style>
+</head><body>
+
+<div class="header">
+  <h1>Image to 3D</h1>
+  <p>Paste any image URL and get an interactive 3D model in ~2 minutes</p>
+</div>
+
+<div class="input-row">
+  <input type="text" id="url" placeholder="Paste image URL here..." autofocus>
+  <button id="go" onclick="generate()">Generate 3D</button>
+</div>
+
+<div class="status" id="status"></div>
+<div class="progress" id="progress"><div class="progress-bar"></div></div>
+
+<div class="result" id="result">
+  <div class="compare">
+    <img id="src-img" src="">
+    <span class="arrow">&rarr;</span>
+    <div class="viewer-wrap">
+      <model-viewer id="viewer" auto-rotate camera-controls shadow-intensity="1" environment-image="neutral" style="width:100%;height:100%;background:#111;"></model-viewer>
+    </div>
+  </div>
+  <div class="dl"><a id="dl-link" href="#" download>Download .glb</a></div>
+</div>
+
+<script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+<script>
+async function generate() {
+  const url = document.getElementById('url').value.trim();
+  if (!url) return;
+
+  const btn = document.getElementById('go');
+  const status = document.getElementById('status');
+  const progress = document.getElementById('progress');
+  const result = document.getElementById('result');
+
+  btn.disabled = true;
+  result.style.display = 'none';
+  progress.style.display = 'block';
+  status.textContent = 'Submitting...';
+
+  try {
+    const r = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_url: url }),
+    });
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+
+    status.textContent = 'Generating 3D model...';
+    const glbUrl = await poll(data.status_url, data.response_url, status);
+
+    document.getElementById('src-img').src = url;
+    document.getElementById('viewer').src = glbUrl;
+    document.getElementById('dl-link').href = glbUrl;
+    result.style.display = 'flex';
+    status.textContent = 'Done!';
+  } catch (e) {
+    status.textContent = 'Error: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    progress.style.display = 'none';
+  }
+}
+
+async function poll(statusUrl, responseUrl, status) {
+  while (true) {
+    await new Promise(r => setTimeout(r, 4000));
+    const r = await fetch('/api/status?url=' + encodeURIComponent(statusUrl));
+    const data = await r.json();
+
+    if (data.status === 'COMPLETED') {
+      const rr = await fetch('/api/result?url=' + encodeURIComponent(responseUrl));
+      const result = await rr.json();
+      return result.model_glb?.url || result.model_urls?.glb?.url;
+    }
+    if (data.status === 'FAILED') throw new Error('Generation failed');
+
+    status.textContent = data.status === 'IN_QUEUE' ? 'In queue...' : 'Generating 3D model...';
+  }
+}
+
+document.getElementById('url').addEventListener('keydown', e => { if (e.key === 'Enter') generate(); });
+</script>
+</body></html>
