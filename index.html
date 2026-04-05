@@ -76,10 +76,10 @@
 
   /* Hero */
   .hero {
-    padding: 32px 24px 8px; text-align: center;
+    padding: 12px 24px 4px; text-align: center;
   }
-  .hero h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
-  .hero p { font-size: 14px; color: #556; margin-top: 6px; }
+  .hero h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .hero p { font-size: 14px; color: #556; margin-top: 4px; }
 
   /* Section title */
   .section-title {
@@ -123,7 +123,10 @@
   .card .card-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
   .card .card-header .info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
   .card .card-header .title { font-size: 13px; font-weight: 600; color: #dde; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .card .card-header .subtitle { font-size: 11px; color: #556; }
+  .card .card-header .subtitle { font-size: 11px; color: #556; text-decoration: none; }
+  a.subtitle:hover { color: #889; text-decoration: underline; }
+  .card .card-header .source-link { color: #445; font-size: 16px; text-decoration: none; margin-left: auto; flex-shrink: 0; }
+  .card .card-header .source-link:hover { color: #889; }
   .card .viewer {
     width: 100%; aspect-ratio: 4/5; background: #13161d; position: relative;
   }
@@ -316,13 +319,16 @@ function createCard(m) {
   const creator = esc(m.creator || 'GenSculpt');
   const duration = m.duration_s ? `&#9201; ${m.duration_s}s` : '';
   const cost = m.cost_usd ? `&#9670; $${m.cost_usd.toFixed(2)}` : '';
+  const profileLink = m.profile_url ? `<a href="${esc(m.profile_url)}" target="_blank" class="subtitle">${creator}</a>` : `<span class="subtitle">${creator}</span>`;
+  const sourceLink = m.source_url ? `<a href="${esc(m.source_url)}" target="_blank" class="source-link" title="View original">&#8599;</a>` : '';
   card.innerHTML = `
     <div class="card-header">
       <div class="avatar"><img src="${esc(m.source_image)}" alt="" onerror="this.style.display='none'"></div>
       <div class="info">
         <span class="title">${title}</span>
-        <span class="subtitle">${creator}</span>
+        ${profileLink}
       </div>
+      ${sourceLink}
     </div>
     <div class="viewer">
       <model-viewer src="${esc(m.glb_url)}" loading="lazy" auto-rotate camera-controls shadow-intensity="1" environment-image="neutral" style="width:100%;height:100%;background:#13161d;"></model-viewer>
@@ -435,7 +441,7 @@ async function generate() {
     await fetch('/api/models', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source_image: sourceImg, glb_url: glbUrl, title: meta.title, creator: meta.creator, duration_s: durationS }),
+      body: JSON.stringify({ source_image: sourceImg, glb_url: glbUrl, title: meta.title, creator: meta.creator, source_url: url, profile_url: meta.profile_url, duration_s: durationS }),
     });
 
     clearInterval(card._timerInterval);

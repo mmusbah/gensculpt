@@ -78,8 +78,11 @@ async function fetchPageMeta(url) {
       title = title.replace(/\s*[-|]\s*GenTube$/i, '').trim();
     }
 
+    // Build profile URL from creator name
+    const profileUrl = creator ? `https://www.gentube.app/profile/${creator}` : '';
+
     log(`Meta: title="${title}", creator="${creator}"`);
-    return { title: escapeHtml(title), creator: escapeHtml(creator) };
+    return { title: escapeHtml(title), creator: escapeHtml(creator), profile_url: profileUrl };
   } catch (e) {
     log(`Meta scrape failed: ${e.message}`);
     return { title: '', creator: '' };
@@ -137,10 +140,7 @@ app.post('/api/generate', async (req, res) => {
   try {
     if (!req.body.image_url) return res.status(400).json({ error: 'image_url is required' });
 
-    const ip = req.ip || req.connection.remoteAddress;
-    if (rateLimited(ip)) return res.status(429).json({ error: 'Please wait 2 minutes between generations' });
-
-    log(`POST /api/generate — ${req.body.image_url} (ip: ${ip})`);
+    log(`POST /api/generate — ${req.body.image_url}`);
     const imageUrl = await resolveImageUrl(req.body.image_url);
 
     log(`Submitting to fal.ai: ${imageUrl}`);
@@ -228,6 +228,8 @@ app.post('/api/models', async (req, res) => {
       id,
       title: req.body.title || '',
       creator: req.body.creator || '',
+      source_url: req.body.source_url || '',
+      profile_url: req.body.profile_url || '',
       source_image: savedImage ? `/files/${id}.${imgExt}` : req.body.source_image,
       glb_url: `/files/${id}.glb`,
       duration_s: req.body.duration_s || 0,
