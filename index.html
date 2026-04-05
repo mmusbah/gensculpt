@@ -123,13 +123,15 @@
   .card .card-header .avatar { width: 32px; height: 32px; border-radius: 50%; background: #2a2e3a; flex-shrink: 0; overflow: hidden; }
   .card .card-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
   .card .card-header .info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-  .card .card-header .title { font-size: 13px; font-weight: 600; color: #dde; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .card-header .title { font-size: 13px; font-weight: 600; color: #dde; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+  a.title:hover { text-decoration: underline; color: #fff; }
   .card .card-header .subtitle { font-size: 11px; color: #556; text-decoration: none; }
   a.subtitle:hover { color: #889; text-decoration: underline; }
-  .card .card-header .source-link { color: #445; font-size: 16px; text-decoration: none; margin-left: auto; flex-shrink: 0; }
-  .card .card-header .source-link:hover { color: #889; }
   .card .viewer {
-    width: 100%; aspect-ratio: 4/5; background: #13161d; position: relative;
+    width: 100%; aspect-ratio: 4/5; background: #13161d; position: relative; overflow: hidden;
+  }
+  .card .viewer .viewer-bg {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.12; filter: blur(2px);
   }
   .card model-viewer {
     width: 100%; height: 100%;
@@ -316,23 +318,23 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
 function createCard(m) {
   const card = document.createElement('div');
   card.className = 'card';
-  const title = esc(m.title || '3D Model');
+  const title = esc(m.title || 'Untitled');
   const creator = esc(m.creator || 'GenSculpt');
   const duration = m.duration_s ? `&#9201; ${m.duration_s}s` : '';
   const cost = m.cost_usd ? `&#9670; $${m.cost_usd.toFixed(2)}` : '';
+  const titleHtml = m.source_url ? `<a href="${esc(m.source_url)}" target="_blank" class="title">${title}</a>` : `<span class="title">${title}</span>`;
   const profileLink = m.profile_url ? `<a href="${esc(m.profile_url)}" target="_blank" class="subtitle">${creator}</a>` : `<span class="subtitle">${creator}</span>`;
-  const sourceLink = m.source_url ? `<a href="${esc(m.source_url)}" target="_blank" class="source-link" title="View original">&#8599;</a>` : '';
   card.innerHTML = `
     <div class="card-header">
       <div class="avatar"><img src="${esc(m.source_image)}" alt="" onerror="this.style.display='none'"></div>
       <div class="info">
-        <span class="title">${title}</span>
+        ${titleHtml}
         ${profileLink}
       </div>
-      ${sourceLink}
     </div>
     <div class="viewer">
-      <model-viewer src="${esc(m.glb_url)}" loading="lazy" auto-rotate camera-controls shadow-intensity="1" environment-image="neutral" style="width:100%;height:100%;background:#13161d;"></model-viewer>
+      <img class="viewer-bg" src="${esc(m.source_image)}" alt="">
+      <model-viewer src="${esc(m.glb_url)}" loading="lazy" auto-rotate camera-controls shadow-intensity="1" environment-image="neutral" style="width:100%;height:100%;background:transparent;"></model-viewer>
     </div>
     <div class="card-bottom">
       <div class="stats">
