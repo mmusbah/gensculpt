@@ -2,74 +2,188 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Image to 3D</title>
+<title>GenTube 3D</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0a0a0a; color: #fff; font-family: -apple-system, system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
-  .header { padding: 48px 24px 24px; text-align: center; }
-  .header h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
-  .header p { color: #888; margin-top: 8px; font-size: 15px; }
-  .input-row { display: flex; gap: 10px; padding: 0 24px; width: 100%; max-width: 640px; }
-  .input-row input { flex: 1; padding: 14px 18px; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-size: 15px; outline: none; }
-  .input-row input:focus { border-color: #555; }
-  .input-row button { padding: 14px 28px; border-radius: 10px; border: none; background: #fff; color: #000; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-  .input-row button:hover { background: #e0e0e0; }
-  .input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
-  .status { margin-top: 24px; color: #888; font-size: 14px; min-height: 20px; }
-  .progress { width: 200px; height: 3px; background: #222; border-radius: 2px; margin-top: 12px; overflow: hidden; display: none; }
-  .progress-bar { height: 100%; background: #fff; border-radius: 2px; animation: indeterminate 1.5s infinite; }
-  @keyframes indeterminate { 0% { width: 0; margin-left: 0; } 50% { width: 60%; margin-left: 20%; } 100% { width: 0; margin-left: 100%; } }
-  .result { margin-top: 32px; width: 100%; max-width: 700px; display: none; flex-direction: column; align-items: center; padding: 0 24px; }
-  .compare { display: flex; gap: 20px; width: 100%; align-items: flex-start; margin-bottom: 16px; }
-  .compare img { width: 160px; border-radius: 10px; border: 1px solid #333; }
-  .compare .arrow { font-size: 28px; color: #555; align-self: center; }
-  .viewer-wrap { width: 100%; aspect-ratio: 1; background: #111; border-radius: 14px; border: 1px solid #222; overflow: hidden; }
-  model-viewer { width: 100%; height: 100%; }
-  .dl { margin-top: 16px; margin-bottom: 48px; }
-  .dl a { background: #222; color: #fff; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-size: 14px; }
-  .dl a:hover { background: #333; }
+  body { background: #13161d; color: #fff; font-family: -apple-system, system-ui, sans-serif; min-height: 100vh; }
+
+  /* Top bar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 24px;
+    background: #1a1e2a;
+    border-bottom: 1px solid #2a2e3a;
+  }
+  .topbar img { height: 28px; }
+  .topbar .logo-text { font-size: 18px; font-weight: 700; }
+  .topbar .input-wrap {
+    flex: 1; max-width: 720px; margin: 0 auto; position: relative;
+  }
+  .topbar input {
+    width: 100%; padding: 12px 18px; padding-right: 44px;
+    border-radius: 10px; border: 1px solid #2a2e3a;
+    background: #242837; color: #fff; font-size: 15px; outline: none;
+  }
+  .topbar input::placeholder { color: #667; }
+  .topbar input:focus { border-color: #444; }
+  .topbar .submit-icon {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: #888; cursor: pointer; font-size: 18px;
+    padding: 6px;
+  }
+  .topbar .submit-icon:hover { color: #fff; }
+
+  /* Status toast */
+  .toast {
+    position: fixed; top: 72px; left: 50%; transform: translateX(-50%);
+    background: #242837; border: 1px solid #2a2e3a; border-radius: 10px;
+    padding: 12px 24px; font-size: 14px; color: #aab;
+    display: none; z-index: 200; align-items: center; gap: 10px;
+  }
+  .toast.show { display: flex; }
+  .toast .spinner {
+    width: 16px; height: 16px; border: 2px solid #444; border-top-color: #fff;
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Feed grid */
+  .feed {
+    max-width: 1200px; margin: 24px auto; padding: 0 24px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  }
+  @media (max-width: 900px) { .feed { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .feed { grid-template-columns: 1fr; } }
+
+  /* Card */
+  .card {
+    background: #1a1e2a; border-radius: 14px; overflow: hidden;
+    border: 1px solid #2a2e3a; transition: border-color 0.2s;
+  }
+  .card:hover { border-color: #3a3e4a; }
+  .card .viewer {
+    width: 100%; aspect-ratio: 1; background: #13161d;
+  }
+  .card model-viewer {
+    width: 100%; height: 100%;
+    --poster-color: transparent;
+  }
+  .card .card-footer {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    border-top: 1px solid #2a2e3a;
+  }
+  .card .card-footer img {
+    width: 36px; height: 36px; border-radius: 8px; object-fit: cover;
+    border: 1px solid #2a2e3a;
+  }
+  .card .card-footer span {
+    font-size: 13px; color: #889;
+  }
+
+  /* Empty state */
+  .empty {
+    grid-column: 1 / -1; text-align: center; padding: 80px 24px; color: #556;
+  }
+  .empty p { font-size: 16px; margin-bottom: 6px; }
+  .empty span { font-size: 13px; }
+
+  /* Generating card placeholder */
+  .card.generating .viewer {
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card.generating .loader {
+    display: flex; flex-direction: column; align-items: center; gap: 12px; color: #667;
+  }
+  .card.generating .loader .spinner {
+    width: 28px; height: 28px; border: 2px solid #333; border-top-color: #888;
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  .card.generating .loader span { font-size: 13px; }
 </style>
 </head><body>
 
-<div class="header">
-  <h1>Image to 3D</h1>
-  <p>Paste any image URL and get an interactive 3D model in ~2 minutes</p>
-</div>
-
-<div class="input-row">
-  <input type="text" id="url" placeholder="Paste image URL here..." autofocus>
-  <button id="go" onclick="generate()">Generate 3D</button>
-</div>
-
-<div class="status" id="status"></div>
-<div class="progress" id="progress"><div class="progress-bar"></div></div>
-
-<div class="result" id="result">
-  <div class="compare">
-    <img id="src-img" src="">
-    <span class="arrow">&rarr;</span>
-    <div class="viewer-wrap">
-      <model-viewer id="viewer" auto-rotate camera-controls shadow-intensity="1" environment-image="neutral" style="width:100%;height:100%;background:#111;"></model-viewer>
-    </div>
+<div class="topbar">
+  <img src="https://www.gentube.app/images/gentube.svg" alt="GenTube">
+  <span class="logo-text">GenTube</span>
+  <div class="input-wrap">
+    <input type="text" id="url" placeholder="Type to Create ✨" autofocus>
+    <button class="submit-icon" onclick="generate()" title="Generate 3D">&#10148;</button>
   </div>
-  <div class="dl"><a id="dl-link" href="#" download>Download .glb</a></div>
 </div>
+
+<div class="toast" id="toast">
+  <div class="spinner"></div>
+  <span id="toast-text">Generating...</span>
+</div>
+
+<div class="feed" id="feed"></div>
 
 <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 <script>
+const feed = document.getElementById('feed');
+const toast = document.getElementById('toast');
+const toastText = document.getElementById('toast-text');
+
+// Load existing models on page load
+async function loadFeed() {
+  const res = await fetch('/api/models');
+  const models = await res.json();
+  feed.innerHTML = '';
+  if (models.length === 0) {
+    feed.innerHTML = '<div class="empty"><p>No models yet</p><span>Paste an image URL above to create your first 3D model</span></div>';
+    return;
+  }
+  models.forEach(m => addCard(m.source_image, m.glb_url));
+}
+
+function addCard(sourceImage, glbUrl) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="viewer">
+      <model-viewer src="${glbUrl}" auto-rotate camera-controls shadow-intensity="1" environment-image="neutral" style="width:100%;height:100%;background:#13161d;"></model-viewer>
+    </div>
+    <div class="card-footer">
+      <img src="${sourceImage}" alt="source">
+      <span>3D Model</span>
+    </div>
+  `;
+  return card;
+}
+
+function addGeneratingCard(sourceImage) {
+  const card = document.createElement('div');
+  card.className = 'card generating';
+  card.id = 'generating-card';
+  card.innerHTML = `
+    <div class="viewer">
+      <div class="loader">
+        <div class="spinner"></div>
+        <span>Creating 3D model...</span>
+      </div>
+    </div>
+    <div class="card-footer">
+      <img src="${sourceImage}" alt="source">
+      <span>Generating...</span>
+    </div>
+  `;
+  // Remove empty state if present
+  const empty = feed.querySelector('.empty');
+  if (empty) empty.remove();
+  feed.prepend(card);
+  return card;
+}
+
 async function generate() {
-  const url = document.getElementById('url').value.trim();
+  const input = document.getElementById('url');
+  const url = input.value.trim();
   if (!url) return;
+  input.value = '';
 
-  const btn = document.getElementById('go');
-  const status = document.getElementById('status');
-  const progress = document.getElementById('progress');
-  const result = document.getElementById('result');
-
-  btn.disabled = true;
-  result.style.display = 'none';
-  progress.style.display = 'block';
-  status.textContent = 'Submitting...';
+  const card = addGeneratingCard(url);
+  toast.classList.add('show');
+  toastText.textContent = 'Submitting...';
 
   try {
     const r = await fetch('/api/generate', {
@@ -80,23 +194,31 @@ async function generate() {
     const data = await r.json();
     if (data.error) throw new Error(data.error);
 
-    status.textContent = 'Generating 3D model...';
-    const glbUrl = await poll(data.status_url, data.response_url, status);
+    toastText.textContent = 'Generating 3D model...';
+    const glbUrl = await poll(data.status_url, data.response_url);
 
-    document.getElementById('src-img').src = url;
-    document.getElementById('viewer').src = glbUrl;
-    document.getElementById('dl-link').href = glbUrl;
-    result.style.display = 'flex';
-    status.textContent = 'Done!';
+    // Save to server
+    await fetch('/api/models', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source_image: url, glb_url: glbUrl }),
+    });
+
+    // Replace generating card with real card
+    const realCard = addCard(url, glbUrl);
+    card.replaceWith(realCard);
+    toast.classList.remove('show');
+
   } catch (e) {
-    status.textContent = 'Error: ' + e.message;
-  } finally {
-    btn.disabled = false;
-    progress.style.display = 'none';
+    toastText.textContent = 'Error: ' + e.message;
+    setTimeout(() => {
+      toast.classList.remove('show');
+      card.remove();
+    }, 3000);
   }
 }
 
-async function poll(statusUrl, responseUrl, status) {
+async function poll(statusUrl, responseUrl) {
   while (true) {
     await new Promise(r => setTimeout(r, 4000));
     const r = await fetch('/api/status?url=' + encodeURIComponent(statusUrl));
@@ -108,11 +230,11 @@ async function poll(statusUrl, responseUrl, status) {
       return result.model_glb?.url || result.model_urls?.glb?.url;
     }
     if (data.status === 'FAILED') throw new Error('Generation failed');
-
-    status.textContent = data.status === 'IN_QUEUE' ? 'In queue...' : 'Generating 3D model...';
+    toastText.textContent = data.status === 'IN_QUEUE' ? 'In queue...' : 'Creating 3D model...';
   }
 }
 
 document.getElementById('url').addEventListener('keydown', e => { if (e.key === 'Enter') generate(); });
+loadFeed();
 </script>
 </body></html>
